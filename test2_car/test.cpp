@@ -16,7 +16,7 @@ public:
 };
 
 class MockEcuBrain : public EcuBrain{
-    MOCK_METHOD0(getProximitySensorData,double());
+    public : MOCK_METHOD0(getProximitySensorData,double());
 };
 
 
@@ -25,7 +25,7 @@ class Obu {
     public:
     Obu(EcuBrain & _ecu) : ecu(_ecu) {}
 
-    double RequestProximitySensorData(double data){
+    double RequestProximitySensorData(){
         
         if (ecu.getProximitySensorData() < 10)
         {
@@ -42,8 +42,8 @@ TEST(EcuTest, Distance){
     MockEcuBrain meb;
     Obu ob(meb);
     
-    EXPECT_CALL(meb, getProximitySensorData).Times(1).WillOnce(Return(10.1));
-    double retValue = ob.RequestProximitySensorData(7);
+    EXPECT_CALL(meb, getProximitySensorData).Times(1).WillOnce(Return(4.2));
+    double retValue = ob.RequestProximitySensorData();
 
     EXPECT_EQ(retValue, 1);
 
