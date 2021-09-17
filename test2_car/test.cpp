@@ -25,7 +25,11 @@ class Obu {
     public:
     Obu(EcuBrain & _ecu) : ecu(_ecu) {}
 
-    double RequestProximitySensorData(double data){
+    double RequestProximitySensorData(double data){ 
+        /*
+        * Burada 2 ayri fonksiyon olsa daha iyi olur, checkTheDistance falan gibi
+        * RequestProximitySensorData() fonksiyonu checkTheDistance fonksiyonunu cagirsin.
+        */
         if (ecu.getProximitySensorData(data) < 10)
         {
             cout<<"Too Close"; return 1;
