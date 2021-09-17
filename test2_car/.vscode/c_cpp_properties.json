@@ -6,7 +6,6 @@
                 "${workspaceFolder}/**",
                 "C:/googletestkurulum/googletest/include",
                 "C:/googletestkurulum/googlemock/include"
-
             ],
             "defines": [
                 "_DEBUG",

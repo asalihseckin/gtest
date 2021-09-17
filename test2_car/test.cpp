@@ -12,11 +12,11 @@ using ::testing::_;
 class EcuBrain
 {
 public:
-    virtual double getProximitySensorData() {};
+    virtual double getProximitySensorData() = 0;
 };
 
 class MockEcuBrain : public EcuBrain{
-    MOCK_METHOD(double, getProximitySensorData, ());
+    MOCK_METHOD0(getProximitySensorData,double());
 };
 
 
@@ -41,10 +41,12 @@ class Obu {
 TEST(EcuTest, Distance){
     MockEcuBrain meb;
     Obu ob(meb);
-    EXPECT_CALL(meb, getProximitySensorData).Times(1).WillOnce(Return(10.1))
+    
+    EXPECT_CALL(meb, getProximitySensorData).Times(1).WillOnce(Return(10.1));
     double retValue = ob.RequestProximitySensorData(7);
 
     EXPECT_EQ(retValue, 1);
+
 }
 
 int main(int argc, char **argv){
