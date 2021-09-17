@@ -12,11 +12,11 @@ using ::testing::_;
 class EcuBrain
 {
 public:
-    virtual double getProximitySensorData(double data) {return data;}
+    virtual double getProximitySensorData() {};
 };
 
 class MockEcuBrain : public EcuBrain{
-    MOCK_METHOD(double, getProximitySensorData, (double data));
+    MOCK_METHOD(double, getProximitySensorData, ());
 };
 
 
@@ -26,7 +26,8 @@ class Obu {
     Obu(EcuBrain & _ecu) : ecu(_ecu) {}
 
     double RequestProximitySensorData(double data){
-        if (ecu.getProximitySensorData(data) < 10)
+        
+        if (ecu.getProximitySensorData() < 10)
         {
             cout<<"Too Close"; return 1;
         }
@@ -40,7 +41,7 @@ class Obu {
 TEST(EcuTest, Distance){
     MockEcuBrain meb;
     Obu ob(meb);
-
+    EXPECT_CALL(meb, getProximitySensorData).Times(1).WillOnce(Return(10.1))
     double retValue = ob.RequestProximitySensorData(7);
 
     EXPECT_EQ(retValue, 1);
