@@ -15,7 +15,8 @@ public:
     virtual double getProximitySensorData() = 0;
     virtual bool emergencyAlert(string report) {return true;}
     virtual bool getConnectionStatus(string status) {return true;}
-    virtual double getTimeOfArrival(double speed, double roadDistance) =0;
+    virtual double getSpeeed(double speed) = 0;
+    virtual double getRoadDistance(double roadDistance) = 0;
 };
 
 class MockEcuBrain : public EcuBrain{
@@ -23,7 +24,8 @@ class MockEcuBrain : public EcuBrain{
     MOCK_METHOD0(getProximitySensorData,double());
     MOCK_METHOD1(emergencyAlert, bool (string report));
     MOCK_METHOD1(getConnectionStatus, bool (string status));
-    MOCK_METHOD2(getTimeOfArrival, double (double speed, double roadDistance));
+    MOCK_METHOD1(getSpeeed, double (double speed));
+    MOCK_METHOD1(getRoadDistance, double (double roadDistance));
 };
 
 
@@ -78,15 +80,23 @@ class Obu {
         }
     };
 
-    /*
+    
     double calculateArrivalTime(double speed, double roadDistance){
-        roadDistance = 0;
-        speed = 0;
-        double time = roadDistance/speed;
-        ecu.getTimeOfArrival(speed,roadDistance) = time;
+
+        double time = ecu.getRoadDistance(roadDistance)/ecu.getSpeeed(speed);
+        if(speed >0 && roadDistance>0){
+            cout<<"\nEstimated Time Of Arrival: "<< time;
+        }
+        else if(roadDistance<=0){
+            cout<<"\nYour Distance Cannot be Negative or Zero! \n";
+        }
+        else if(speed<=0){
+            cout<<"\nYour Speed is Zero or an Undefined Value! \n";
+        }
+       
         return time;
     };
-    */
+    
 
     double RequestProximitySensorData(){
 
@@ -133,22 +143,26 @@ TEST(EcuTest, DBStatus){
     MockEcuBrain meb;
     Obu ob(meb);
 
-    ON_CALL(meb, getConnectionStatus(_)).WillByDefault(Return(false));
+    ON_CALL(meb, getConnectionStatus(_)).WillByDefault(Return(true));
     double retValue = ob.ConnectDB("Connect");
 
-    ASSERT_EQ(retValue, 1);
+    ASSERT_EQ(retValue, 0);
 }
 
-/*
+
 TEST(EcuTest, ArrivalTime){
     MockEcuBrain meb;
     Obu ob(meb);
-    double speed =60;
-    double roadDistance= 3;
-    EXPECT_CALL(meb, getTimeOfArrival(speed,roadDistance)).Times(1).WillRepeatedly(Return(true));
-    double retValue = ob.calculateArrivalTime(speed,roadDistance);
+
+    ON_CALL(meb, getSpeeed(_)).WillByDefault(Return(-60));
+    ON_CALL(meb, getRoadDistance(_)).WillByDefault(Return(1800));
+    int retValue = ob.calculateArrivalTime(-60,1800);
+
+    EXPECT_GT(retValue, 0);
+    EXPECT_NE(retValue, 0);
+    EXPECT_NE(retValue, -2147483648);
 }
-*/
+
 
 
 int main(int argc, char **argv){
