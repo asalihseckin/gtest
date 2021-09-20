@@ -13,10 +13,17 @@ class EcuBrain
 {
 public:
     virtual double getProximitySensorData() = 0;
+    virtual bool emergencyAlert(string report) {return true;}
+    virtual bool getConnectionStatus(string status) {return true;}
+    virtual double getTimeOfArrival(double speed, double roadDistance) =0;
 };
 
 class MockEcuBrain : public EcuBrain{
-    public : MOCK_METHOD0(getProximitySensorData,double());
+    public : 
+    MOCK_METHOD0(getProximitySensorData,double());
+    MOCK_METHOD1(emergencyAlert, bool (string report));
+    MOCK_METHOD1(getConnectionStatus, bool (string status));
+    MOCK_METHOD2(getTimeOfArrival, double (double speed, double roadDistance));
 };
 
 
@@ -24,30 +31,125 @@ class Obu {
     EcuBrain & ecu;
     public:
     Obu(EcuBrain & _ecu) : ecu(_ecu) {}
+    
+
+    double checkTheDistance(){
+        double distance{0.0};
+
+        distance= ecu.getProximitySensorData();
+        if (distance < 10)
+    {
+        cout<<"\nToo Close "; return distance;
+    }
+        else {
+            cout<<"Safe "; return distance;
+        }
+    };
+
+    double brakeTheCar(){
+        if (checkTheDistance() < 5)
+    {
+        cout<<"\nBraking is Done "; return 1;
+    }   else {
+            cout<<"Braking is not nececary "; return 2;
+        }
+    };
+
+    bool reportEmergencyAlert(string report,int numberofalerts){
+        int i = 0;
+        for(i=0;i<numberofalerts;i++){
+             if(ecu.emergencyAlert(report) == true){
+            cout<<"\nEmergency signal is being distributed "<< i+1 <<"nd Time";
+            }
+            else{
+            cout<<"\nEmergencey Status Nonactive "; return 0;
+        }
+
+        }
+        return 1;
+    };
+
+    bool ConnectDB(string status){
+        if(ecu.getConnectionStatus(status) != true){
+            cout<<"\nNot Connected "; return 1;
+        }  
+        else{
+            cout<<"\nConnected "; return 0;
+        }
+    };
+
+    /*
+    double calculateArrivalTime(double speed, double roadDistance){
+        roadDistance = 0;
+        speed = 0;
+        double time = roadDistance/speed;
+        ecu.getTimeOfArrival(speed,roadDistance) = time;
+        return time;
+    };
+    */
 
     double RequestProximitySensorData(){
-        
-        if (ecu.getProximitySensorData() < 10)
-        {
-            cout<<"Too Close"; return 1;
-        }
-        else {
-            cout<<"Safe"; return 2;
-        }
-        
+
+        return checkTheDistance();
     }
+
+
 };
 
 TEST(EcuTest, Distance){
     MockEcuBrain meb;
     Obu ob(meb);
     
-    EXPECT_CALL(meb, getProximitySensorData).Times(1).WillOnce(Return(4.2));
+    EXPECT_CALL(meb, getProximitySensorData).Times(1).WillOnce(Return(4));
     double retValue = ob.RequestProximitySensorData();
+
+    EXPECT_LT(retValue, 5);
+
+}
+
+TEST(EcuTest, AutoBrake){
+    MockEcuBrain meb;
+    Obu ob(meb);
+    
+    EXPECT_CALL(meb, getProximitySensorData).Times(1).WillOnce(Return(-5));
+    double retValue = ob.brakeTheCar();
 
     EXPECT_EQ(retValue, 1);
 
 }
+
+TEST(EcuTest, Alert){
+    MockEcuBrain meb;
+    Obu ob(meb);
+    int numberofalerts =3;
+
+    EXPECT_CALL(meb, emergencyAlert("Alert")).Times(numberofalerts).WillRepeatedly(Return(true));
+    double retValue = ob.reportEmergencyAlert("Alert",numberofalerts);
+
+    EXPECT_EQ(retValue, 1);
+}
+
+TEST(EcuTest, DBStatus){
+    MockEcuBrain meb;
+    Obu ob(meb);
+
+    ON_CALL(meb, getConnectionStatus(_)).WillByDefault(Return(false));
+    double retValue = ob.ConnectDB("Connect");
+
+    ASSERT_EQ(retValue, 1);
+}
+
+/*
+TEST(EcuTest, ArrivalTime){
+    MockEcuBrain meb;
+    Obu ob(meb);
+    double speed =60;
+    double roadDistance= 3;
+    EXPECT_CALL(meb, getTimeOfArrival(speed,roadDistance)).Times(1).WillRepeatedly(Return(true));
+    double retValue = ob.calculateArrivalTime(speed,roadDistance);
+}
+*/
+
 
 int main(int argc, char **argv){
     testing::InitGoogleTest(&argc, argv);
