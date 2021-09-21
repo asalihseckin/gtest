@@ -33,7 +33,7 @@ class Obu {
     EcuBrain & ecu;
     public:
     Obu(EcuBrain & _ecu) : ecu(_ecu) {}
-    
+
 
     double checkTheDistance(){
         double distance{0.0};
@@ -84,26 +84,21 @@ class Obu {
     double calculateArrivalTime(double speed, double roadDistance){
 
         double time = ecu.getRoadDistance(roadDistance)/ecu.getSpeeed(speed);
-        if(speed >0 && roadDistance>0){
+        if(speed >0 && roadDistance>0) {
             cout<<"\nEstimated Time Of Arrival: "<< time;
-        }
-        else if(roadDistance<=0){
+        } else if(roadDistance<=0){
             cout<<"\nYour Distance Cannot be Negative or Zero! \n";
-        }
-        else if(speed<=0){
+        } else if(speed<=0){
             cout<<"\nYour Speed is Zero or an Undefined Value! \n";
         }
-       
+
         return time;
     };
     
 
-    double RequestProximitySensorData(){
-
+    double RequestProximitySensorData() {
         return checkTheDistance();
     }
-
-
 };
 
 TEST(EcuTest, Distance){
@@ -150,7 +145,21 @@ TEST(EcuTest, DBStatus){
 }
 
 
-TEST(EcuTest, ArrivalTime){
+TEST(EcuTest, ArrivalTimeGreaterThanTest){
+    MockEcuBrain meb;
+    Obu ob(meb);
+/**
+ * TODO: ON_CALL with ile 2 fonksiyonu birden cagirmaya bak
+ * */
+    ON_CALL(meb, getSpeeed(_)).WillByDefault(Return(80));
+    ON_CALL(meb, getRoadDistance(_)).WillByDefault(Return(1800));
+    int retValue = ob.calculateArrivalTime(-60,1800);
+
+    EXPECT_GT(retValue, 0) << "Expected value is not greater than zero!";
+
+}
+
+TEST(EcuTest, ArrivalTimeNotEqualTest){
     MockEcuBrain meb;
     Obu ob(meb);
 
@@ -158,9 +167,18 @@ TEST(EcuTest, ArrivalTime){
     ON_CALL(meb, getRoadDistance(_)).WillByDefault(Return(1800));
     int retValue = ob.calculateArrivalTime(-60,1800);
 
-    EXPECT_GT(retValue, 0);
-    EXPECT_NE(retValue, 0);
-    EXPECT_NE(retValue, -2147483648);
+    EXPECT_NE(retValue, 0) << "Expected value is not equal to zero!";
+}
+
+TEST(EcuTest, ArrivalTimeZeroSpeed){
+    MockEcuBrain meb;
+    Obu ob(meb);
+
+    ON_CALL(meb, getSpeeed(_)).WillByDefault(Return(-60));
+    ON_CALL(meb, getRoadDistance(_)).WillByDefault(Return(1800));
+    int retValue = ob.calculateArrivalTime(-60,1800);
+
+    EXPECT_NE(retValue, -2147483648) << "Zero speed is not handled!";
 }
 
 
