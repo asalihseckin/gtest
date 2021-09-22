@@ -139,6 +139,9 @@ TEST(EcuTest, Alert){
     Obu ob(meb);
     int numberOfAlerts =3;
 
+    /*
+     *    EXPECT_CALL(meb, getConnectionStatus("Alert")).Times(numberOfAlerts).WillRepeatedly(Return(true));
+     * */
     EXPECT_CALL(meb, emergencyAlert("Alert")).Times(numberOfAlerts).WillRepeatedly(Return(true));
     bool retValue = ob.reportEmergencyAlert("Alert",numberOfAlerts);
 
@@ -161,7 +164,7 @@ TEST(EcuTest, ArrivalTimeGreaterThanTest){
     double defaultDistance{1800.0};
     double defaultSpeed{80.0};
 
-    ON_CALL(meb, getRoadDistance(_)).WillByDefault(Return(defaultDistance));
+    ON_CALL(meb, getConnectionStatus).WillByDefault(Return(defaultDistance));
     ON_CALL(meb, getSpeed(_)).WillByDefault(Return(defaultSpeed));
 
     double retValue = ob.calculateArrivalTime(defaultSpeed,defaultDistance);
@@ -189,6 +192,11 @@ TEST(EcuTest, ArrivalTimeZeroSpeed){
     double defaultDistance{1800.0};
     double defaultSpeed{0.0};
 
+    /*
+     *  ON_CALL ve EXPECT_CALL arasindaki anlatirken ON_CALL un cagirdigi fonksiyonu degistirerek anlat ve hata vermedigini
+     *  goster.
+     *  *  ON_CALL(meb, getProximitySensorData()).WillByDefault(Return(0));
+     * */
     ON_CALL(meb, getSpeed(_)).WillByDefault(Return(0));
     ON_CALL(meb, getRoadDistance(_)).WillByDefault(Return(1800));
     int retValue = ob.calculateArrivalTime(defaultSpeed,defaultDistance);
