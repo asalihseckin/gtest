@@ -8,37 +8,34 @@ using ::testing::AtLeast;
 using ::testing::Return;
 using ::testing::_;
 
-
-class EcuBrain
+class EcuBrainInterface
 {
 public:
     virtual double getProximitySensorData() = 0;
     virtual bool emergencyAlert(string report) {return true;}
     virtual bool getConnectionStatus(string status) {return true;}
-    virtual double getSpeeed(double speed) = 0;
+    virtual double getSpeed(double speed) = 0;
     virtual double getRoadDistance(double roadDistance) = 0;
 };
 
-class MockEcuBrain : public EcuBrain{
+class MockEcuBrain : public EcuBrainInterface{
     public : 
     MOCK_METHOD0(getProximitySensorData,double());
     MOCK_METHOD1(emergencyAlert, bool (string report));
     MOCK_METHOD1(getConnectionStatus, bool (string status));
-    MOCK_METHOD1(getSpeeed, double (double speed));
+    MOCK_METHOD1(getSpeed, double (double speed));
     MOCK_METHOD1(getRoadDistance, double (double roadDistance));
 };
 
-
 class Obu {
-    EcuBrain & ecu;
+    EcuBrainInterface & Ecu;
     public:
-    Obu(EcuBrain & _ecu) : ecu(_ecu) {}
-
+    Obu(EcuBrainInterface & _ecu) : Ecu(_ecu) {}
 
     double checkTheDistance(){
         double distance{0.0};
 
-        distance= ecu.getProximitySensorData();
+        distance= Ecu.getProximitySensorData();
         if (distance < 10)
     {
         cout<<"\nToo Close "; return distance;
@@ -46,53 +43,67 @@ class Obu {
         else {
             cout<<"Safe "; return distance;
         }
-    };
+    }
 
     double brakeTheCar(){
         if (checkTheDistance() < 5)
     {
-        cout<<"\nBraking is Done "; return 1;
+        cout<<"\nBraking is Done ";
+            return 1;
     }   else {
-            cout<<"Braking is not nececary "; return 2;
+            cout<<"Braking is not necessary ";
+            return 0;
         }
-    };
+    }
 
-    bool reportEmergencyAlert(string report,int numberofalerts){
+    bool reportEmergencyAlert(string report,int numberOfAlerts){
         int i = 0;
-        for(i=0;i<numberofalerts;i++){
-             if(ecu.emergencyAlert(report) == true){
-            cout<<"\nEmergency signal is being distributed "<< i+1 <<"nd Time";
+        for(i=0;i<numberOfAlerts;i++){
+             if(Ecu.emergencyAlert(report) == true) {
+                 cout<<"\nEmergency signal is being distributed "<< i+1 <<"nd Time";
+            } else {
+                cout<<"\nEmergencey Status Nonactive "; return false;
             }
-            else{
-            cout<<"\nEmergencey Status Nonactive "; return 0;
         }
-
-        }
-        return 1;
-    };
+        return true;
+    }
 
     bool ConnectDB(string status){
-        if(ecu.getConnectionStatus(status) != true){
-            cout<<"\nNot Connected "; return 1;
-        }  
-        else{
-            cout<<"\nConnected "; return 0;
+        if(Ecu.getConnectionStatus(status) != true){
+            cout<<"\nNot Connected ";
+            return true;
+        } else{
+            cout<<"\nConnected ";
+            return false;
         }
     };
 
     
     double calculateArrivalTime(double speed, double roadDistance){
 
-        double time = ecu.getRoadDistance(roadDistance)/ecu.getSpeeed(speed);
+        /*
+         double time = ecu.getRoadDistance(roadDistance)/ecu.getSpeed(speed);
         if(speed >0 && roadDistance>0) {
             cout<<"\nEstimated Time Of Arrival: "<< time;
-        } else if(roadDistance<=0){
+        } else if(roadDistance<=0) {
             cout<<"\nYour Distance Cannot be Negative or Zero! \n";
-        } else if(speed<=0){
+        } else if(speed<=0) {
             cout<<"\nYour Speed is Zero or an Undefined Value! \n";
         }
+         * */
 
-        return time;
+        //double time = roadDistance / speed;
+
+        if(speed > 0 && roadDistance > 0) {
+            double time = roadDistance / speed;
+            cout<<"\nEstimated Time Of Arrival: "<< time;
+        } else if(roadDistance<=0) {
+            cout<<"\nYour Distance Cannot be Negative or Zero! \n";
+            return 0.0;
+        } else if(speed<=0) {
+            cout<<"\nYour Speed is Zero or an Undefined Value! \n";
+            return 0.0;
+        }
     };
     
 
@@ -101,7 +112,7 @@ class Obu {
     }
 };
 
-TEST(EcuTest, Distance){
+TEST(EcuTest, Distance) {
     MockEcuBrain meb;
     Obu ob(meb);
     
@@ -112,7 +123,7 @@ TEST(EcuTest, Distance){
 
 }
 
-TEST(EcuTest, AutoBrake){
+TEST(EcuTest, AutoBrake) {
     MockEcuBrain meb;
     Obu ob(meb);
     
@@ -126,12 +137,12 @@ TEST(EcuTest, AutoBrake){
 TEST(EcuTest, Alert){
     MockEcuBrain meb;
     Obu ob(meb);
-    int numberofalerts =3;
+    int numberOfAlerts =3;
 
-    EXPECT_CALL(meb, emergencyAlert("Alert")).Times(numberofalerts).WillRepeatedly(Return(true));
-    double retValue = ob.reportEmergencyAlert("Alert",numberofalerts);
+    EXPECT_CALL(meb, emergencyAlert("Alert")).Times(numberOfAlerts).WillRepeatedly(Return(true));
+    bool retValue = ob.reportEmergencyAlert("Alert",numberOfAlerts);
 
-    EXPECT_EQ(retValue, 1);
+    EXPECT_EQ(retValue, true);
 }
 
 TEST(EcuTest, DBStatus){
@@ -139,21 +150,21 @@ TEST(EcuTest, DBStatus){
     Obu ob(meb);
 
     ON_CALL(meb, getConnectionStatus(_)).WillByDefault(Return(true));
-    double retValue = ob.ConnectDB("Connect");
+    bool retValue = ob.ConnectDB("Connect");
 
     ASSERT_EQ(retValue, 0);
 }
 
-
 TEST(EcuTest, ArrivalTimeGreaterThanTest){
     MockEcuBrain meb;
     Obu ob(meb);
-/**
- * TODO: ON_CALL with ile 2 fonksiyonu birden cagirmaya bak
- * */
-    ON_CALL(meb, getSpeeed(_)).WillByDefault(Return(80));
-    ON_CALL(meb, getRoadDistance(_)).WillByDefault(Return(1800));
-    int retValue = ob.calculateArrivalTime(-60,1800);
+    double defaultDistance{1800.0};
+    double defaultSpeed{80.0};
+
+    ON_CALL(meb, getRoadDistance(_)).WillByDefault(Return(defaultDistance));
+    ON_CALL(meb, getSpeed(_)).WillByDefault(Return(defaultSpeed));
+
+    double retValue = ob.calculateArrivalTime(defaultSpeed,defaultDistance);
 
     EXPECT_GT(retValue, 0) << "Expected value is not greater than zero!";
 
@@ -162,26 +173,28 @@ TEST(EcuTest, ArrivalTimeGreaterThanTest){
 TEST(EcuTest, ArrivalTimeNotEqualTest){
     MockEcuBrain meb;
     Obu ob(meb);
+    double defaultDistance{1800.0};
+    double defaultSpeed{-60};
 
-    ON_CALL(meb, getSpeeed(_)).WillByDefault(Return(-60));
-    ON_CALL(meb, getRoadDistance(_)).WillByDefault(Return(1800));
-    int retValue = ob.calculateArrivalTime(-60,1800);
+    ON_CALL(meb, getSpeed(_)).WillByDefault(Return(defaultSpeed));
+    ON_CALL(meb, getRoadDistance(_)).WillByDefault(Return(defaultDistance));
+    int retValue = ob.calculateArrivalTime(defaultSpeed,defaultDistance);
 
-    EXPECT_NE(retValue, 0) << "Expected value is not equal to zero!";
+    EXPECT_EQ(retValue, 0) << "Expected value is not equal to zero!";
 }
 
 TEST(EcuTest, ArrivalTimeZeroSpeed){
     MockEcuBrain meb;
     Obu ob(meb);
+    double defaultDistance{1800.0};
+    double defaultSpeed{0.0};
 
-    ON_CALL(meb, getSpeeed(_)).WillByDefault(Return(-60));
+    ON_CALL(meb, getSpeed(_)).WillByDefault(Return(0));
     ON_CALL(meb, getRoadDistance(_)).WillByDefault(Return(1800));
-    int retValue = ob.calculateArrivalTime(-60,1800);
+    int retValue = ob.calculateArrivalTime(defaultSpeed,defaultDistance);
 
-    EXPECT_NE(retValue, -2147483648) << "Zero speed is not handled!";
+    EXPECT_EQ(retValue, 0) << "Zero speed is not handled!";
 }
-
-
 
 int main(int argc, char **argv){
     testing::InitGoogleTest(&argc, argv);
